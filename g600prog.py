@@ -12,45 +12,71 @@ import usb.util
 
 def main(argv):
     cfg = parseArgs(argv)
-    print(cfg)  # DELETEME
-    if cfg.print_mapping or (cfg.save_mapping is not None):
-        mouseMapping = readMouseMapping()
-        if cfg.print_mapping:
+    if cfg.print or (cfg.read_file is not None):
+        mouseMapping = readMouseMappingFromMouse(cfg.debug)
+        if cfg.print:
+            print("Printing mouse config...")
             print(mouseMapping)
-        if (cfg.save_mapping is not None):
-            writeMouseMappingToFile(cfg.save_mapping)
-    if cfg.write_mapping is not None:
-        writeFileMappingToMouse(cfg.write_mapping)
+            if cfg.debug:
+                for mode in mouseMapping.elemDict:
+                    modeBytes = mouseMapping.elemDict[mode].bytes
+                    print(" ".join("0x{:02x}".format(x) for x in modeBytes))
+        if (cfg.read_file is not None):
+            saveMouseMappingToFile(cfg.read_file, mouseMapping)
+    if cfg.write_file is not None:
+        mouseMapping = readMouseMappingFromFile(cfg.write_file, cfg.debug)
+        writeMouseMappingToMouse(mouseMapping, cfg.debug, cfg.dry_run)
 
 
 def parseArgs(argv):
     parser = argparse.ArgumentParser(description='Utility to read/write logitech g600 mouse key maps.  In most cases, this requires root (ie, run sudo <this script>)')
     rdWrGroup = parser.add_mutually_exclusive_group()
-    parser.add_argument('-p', '--print-mapping',
+    parser.add_argument('-p', '--print',
                         help='Print the current mappings stored in the mouse',
                         action='store_true',)
-    rdWrGroup.add_argument('-s', '--save-mapping',
+    rdWrGroup.add_argument('-r', '--read-file',
                            type=argparse.FileType('w'),
-                           help='Save current mappings stored in the mouse to the file specified',
+                           help='Read current settings stored in the mouse and save to the file specified',
     )
-    rdWrGroup.add_argument('-w', '--write-mapping',
+    rdWrGroup.add_argument('-w', '--write-file',
                            type=argparse.FileType('r'),
-                           help='Write the settings in the specified mouse mappings settings file to the mouse',
+                           help='Write the settings in the specified file to the mouse',
     )
+    parser.add_argument('-n', '--dry-run',
+                        help='For testing writes to the mouse, intended to be used in conjunction with debug, will do everything except for actually send the usb programming messages.',
+                        action='store_true',)
+    parser.add_argument('-d', '--debug',
+                        help='Turn on debug printing',
+                        action='store_true',)
 
     cfg = parser.parse_args()
     return cfg
 
-def readMouseMapping():
-    rawBytes = readUsbMouseMappingRawBytes()
-    # print(" ".join("{:02x}".format(x) for x in rawBytes))  # uncomment this to hexdump the byte array
-    print("readMouseMapping")  # DELETEME
+def readMouseMappingFromMouse(debug):
+    print("Reading mouse config from mouse...")
+    mouseMapping = G600MouseMapping()
+    rawModeBytesList = readUsbMouseMappingRawBytes(debug)
+    mouseMapping.fromModeRawBytesList(rawModeBytesList)
+    print("... done reading mouse config from mouse")
+    return mouseMapping
 
-def writeMouseMappingToFile(fileHandle):
-    print("writeMouseMappingToFile(fileHandle")  # DELETEME
+def readMouseMappingFromFile(fileHandle, debug):
+    print("Reading mouse config from file...")
+    mouseMapping = G600MouseMapping()
+    mouseMapping.json = fileHandle.read()
+    print("... done reading mouse config from file")
+    return mouseMapping
 
-def writeFileMappingToMouse(fileHandle):
-    print("writeFileMappingToMouse(fileHandle")  # DELETEME
+def saveMouseMappingToFile(fileHandle, mouseMapping):
+    print("Saving the read mouse config to disk...")
+    fileHandle.write(mouseMapping.json)
+    print("...done saving the read mouse config to disk")
+
+def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
+    print("Writing the read mouse config to the mouse...")
+    rawModeBytesList = mouseMapping.toModeRawBytesList()
+    writeUsbMouseMappingRawBytes(rawModeBytesList, debug, dryRun)
+    print("...done writing the read mouse config to the mouse")
 
 ################################################################################
 ## usb read/write to the mouse control interface.
@@ -69,6 +95,7 @@ def readUsbMouseMappingRawBytes(debug=False):
     One for each of the mouse "modes."
     Each list element is a bytearray() type.
     """
+    if debug: print("About to read USB...")
     dev = usb.core.find(idVendor=IDVENDOR, idProduct=IDPRODUCT)
     if dev.is_kernel_driver_active(G600_CONTROL_INTERFACE) is True:
         # tell the kernel to detach
@@ -83,23 +110,26 @@ def readUsbMouseMappingRawBytes(debug=False):
                                      wIndex=G600_READ_IDX,
                                      data_or_wLength=G600_READ_LENGTH,
                                      timeout=None)
-        if debug: print(" ".join("{:02x}".format(x) for x in replyMsg))  # uncomment this to hexdump the usb reply
+        if debug: print("for reportId=0x{:04x}, read these bytes: ".format(reportId),)
+        if debug: print(" ".join("0x{:02x}".format(x) for x in replyMsg))
         modes.append(replyMsg)
     # release the device
     usb.util.release_interface(dev, G600_CONTROL_INTERFACE)
     # reattach the device to the OS kernel
     dev.attach_kernel_driver(G600_CONTROL_INTERFACE)
     # done
+    if debug: print("...Done reading USB")
     return modes
 
 G600_WRITE_REQTYPE = 0x21
 G600_WRITE_REQ = 0x09
 G600_WRITE_IDX = G600_CONTROL_INTERFACE
-def writeUsbMouseMappingRawBytes(modes):
+def writeUsbMouseMappingRawBytes(modes, debug=False, dryRun=True):
     """Argument should be a three element list.
     One for each of the mouse "modes."
     Each list element is a bytearray() type.
     """
+    if debug: print("About to write USB...")
     dev = usb.core.find(idVendor=IDVENDOR, idProduct=IDPRODUCT)
     if dev.is_kernel_driver_active(G600_CONTROL_INTERFACE) is True:
         # tell the kernel to detach
@@ -107,19 +137,28 @@ def writeUsbMouseMappingRawBytes(modes):
         # claim the device
         usb.util.claim_interface(dev, G600_CONTROL_INTERFACE)
     for reportId, rawBytes in zip(G600_REPORT_IDS, modes):
-        l = dev.ctrl_transfer(bmRequestType=G600_WRITE_REQTYPE, # this means control
-                              bRequest=G600_WRITE_REQ,
-                              wValue=reportId,
-                              wIndex=G600_WRITE_IDX,
-                              data_or_wLength=rawBytes,
-                              timeout=None)
-        assert l == len(rawBytes)
+        if debug: print("for reportId=0x{:04x}, sending these bytes: ".format(reportId),)
+        if debug: print(" ".join("0x{:02x}".format(x) for x in rawBytes))
+        if dryRun:
+            print("dryRun flag set, not sending usb config write message")
+        else:
+            l = dev.ctrl_transfer(bmRequestType=G600_WRITE_REQTYPE, # this means control
+                                  bRequest=G600_WRITE_REQ,
+                                  wValue=reportId,
+                                  wIndex=G600_WRITE_IDX,
+                                  data_or_wLength=rawBytes,
+                                  timeout=None)
+            assert l == len(rawBytes)
     # release the device
     usb.util.release_interface(dev, G600_CONTROL_INTERFACE)
     # reattach the device to the OS kernel
     dev.attach_kernel_driver(G600_CONTROL_INTERFACE)
+    if debug: print("...Done writing USB")
     # done
 ################################################################################
+
+def invMap(mapDict):
+    return {v: k for k, v in mapDict.items()}
 
 ################################################################################
 ## raw scan code maps of known codes
@@ -139,6 +178,7 @@ MOUSE_SCAN_CODES_DICT = {0x00  :  "NO_MOUSEBUT" ,
                          0x16  :  "DPI_DEFAULT" ,
                          0x17  :  "GSHIFT"      ,
 }
+MOUSE_SCAN_CODES_INVDICT = invMap(MOUSE_SCAN_CODES_DICT) # for reverse lookup
 
 KB_MODIFIER_BIT_CODES_DICT = {0  : "KC_LCTRL"   ,
                               1  : "KC_LSHIFT"  ,
@@ -149,9 +189,10 @@ KB_MODIFIER_BIT_CODES_DICT = {0  : "KC_LCTRL"   ,
                               6  : "KC_RALT"    ,
                               7  : "KC_RGUI"    ,
 }
+KB_MODIFIER_BIT_CODES_INVDICT = invMap(KB_MODIFIER_BIT_CODES_DICT) # for reverse lookup
 
 KB_SCAN_CODES_DICT = {
-    0x00 : "KC_NO",
+    0x00 : "KC_NOKEY",
     0x01 : "KC_ROLL_OVER",
     0x02 : "KC_POST_FAIL",
     0x03 : "KC_UNDEFINED",
@@ -317,6 +358,8 @@ KB_SCAN_CODES_DICT = {
     0xA3 : "KC_CRSEL",
     0xA4 : "KC_EXSEL",
 }
+KB_SCAN_CODES_INVDICT = invMap(KB_SCAN_CODES_DICT) # for reverse lookup
+
 ################################################################################
 
 ################################################################################
@@ -338,9 +381,16 @@ class BaseFieldType(object):
         self.id = self.ID if id is None else id
 
     def __str__(self):
-        return pprint.pformat(self.simpleRepr)
+        return self.json
 
-        
+    def toJson(self):
+        return json.dumps(self.simpleRepr, indent=4)
+    
+    def fromJson(self, jsonStr):
+        self.simpleRepr = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
+
+    json = property(toJson, fromJson)
+    
 class ScalarFieldType(BaseFieldType):
     ID = "ScalarField"
     BYTE_LEN = 1
@@ -432,10 +482,6 @@ class CompositeFieldType(BaseFieldType):
         for fieldId in self.elemDict:
             self.elemDict[fieldId].bytes = byteArrayIter
 
-    def __str__(self):
-        import pprint
-        return pprint.pformat(self.simpleRepr)
-        
     def toSimpleRepr(self):
         simpleDict = collections.OrderedDict()
         for fieldId in self.elemDict:
@@ -454,17 +500,85 @@ class CompositeFieldType(BaseFieldType):
 ## derived g600 config field types
 
 ################################################################################
+def cleanStr(arg):
+    return arg.strip().upper()
+
+def convertErr(arg, id):
+    raise Exception("{} unable to convert representation of {}".format(id, arg))
+
+def undefinedConvert(arg, id):
+    u = "UNDEFINED"
+    argClean = cleanStr(arg)
+    if argClean[0:len(u)] != u:
+        raise convertErr(arg, id)
+    for char in argClean[len(u):]:
+        if char not in "0123456789":
+            raise convertErr(arg, id)
+    return int(argClean[len(u):])
+
 class G600MouseScanCodeType(ScalarFieldType):
     ID = "mouseScanCode"
-    # FIXME
-    
+
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        if b in MOUSE_SCAN_CODES_DICT:
+            return MOUSE_SCAN_CODES_DICT[b]
+        else:
+            return "UNDEFINED{:03d}".format(b)
+
+    def fromSimpleRepr(self, arg):
+        argClean = cleanStr(arg)
+        if argClean in MOUSE_SCAN_CODES_INVDICT:
+            b = MOUSE_SCAN_CODES_INVDICT[argClean]
+        else:
+            b = undefinedConvert(argClean, self.id)
+        self.bytes[0] = b 
+
+
 class KbModifierBitWiseType(ScalarFieldType):
     ID = "kbModifier"
-    # FIXME
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        codes = []
+        for idx, bit in enumerate(reversed("{:08b}".format(b))):
+            if bit == "1":
+                codes.append(KB_MODIFIER_BIT_CODES_DICT[idx])
+        retVal = "+".join(codes)
+        if retVal == "":
+            retVal = "NO_MOD"
+        return retVal
+
+    def fromSimpleRepr(self, arg):
+        argClean = cleanStr(arg)
+        b = 0
+        if argClean == "NO_MOD":
+            pass
+        else:
+            modifierCodeList = argClean.split("+")
+            for modifierCode in modifierCodeList:
+                if modifierCode not in KB_MODIFIER_BIT_CODES_INVDICT:
+                    convertErr(modifierCode, self.id)
+                else:
+                    b += 2 ** (KB_MODIFIER_BIT_CODES_INVDICT[modifierCode])
+        self.bytes[0] = b 
+
 
 class KbScanCodeType(ScalarFieldType):
     ID = "kbScanCode"
-    # FIXME
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        if b in KB_SCAN_CODES_DICT:
+            return KB_SCAN_CODES_DICT[b]
+        else:
+            return "UNDEFINED{:03d}".format(b)
+
+    def fromSimpleRepr(self, arg):
+        argClean = cleanStr(arg)
+        if argClean in KB_SCAN_CODES_INVDICT:
+            b = KB_SCAN_CODES_INVDICT[argClean]
+        else:
+            b = undefinedConvert(argClean, self.id)
+        self.bytes[0] = b 
 
 class G600PollRateType(ScalarFieldType):
     ID = "pollRate"
@@ -513,53 +627,95 @@ class UnknownBytesArray1(ArrayFieldType):
     NUM_ELEM = 0x5f-0x52
     ELEM_TYPE = ScalarFieldType
 
-class G600ConfigPageType(CompositeFieldType):
-    ID = "ConfigPage"
-    KTM = [("ModeNum", G600ModeScalarType),
-           ("LedColors", G600LedColorsType),
+class UnknownBytesArray2(ArrayFieldType):
+    ID = "Unknown"
+    NUM_ELEM = 0x9e-0x9b
+    ELEM_TYPE = ScalarFieldType
+
+class G600ModeMouseMappingType(CompositeFieldType):
+    ID = "ConfigMode"
+    KTM = [("LedColors", G600LedColorsType),
            ("MaybeLighting", UnknownBytesArray0),
            ("PollRate", G600PollRateType),
            ("DPI", G600DPIGroupType),
            ("Unknown1", UnknownBytesArray1),
            ("buttonMapNormal", G600ButtonMapType),
+           ("Unknown2", UnknownBytesArray2),
            ("buttonMapShift", G600ButtonMapType),
     ]
+
+class G600MouseMapping(CompositeFieldType):
+    ID = "MouseMapping"
+    KTM = [("Mode0", G600ModeMouseMappingType),
+           ("Mode1", G600ModeMouseMappingType),
+           ("Mode2", G600ModeMouseMappingType),
+    ]
+
+    def toModeRawBytesList(self):
+        """Returns three element list.
+        One for each of the mouse "modes."
+        Each list element is a bytearray() type suitable for 
+        sending over usb to program the g600 config interface
+        """
+        modeRawBytesList = []
+        for reportId, elemKey in zip(G600_REPORT_IDS, self.elemDict):
+            rawBytes = bytearray([reportId & 0xff])
+            rawBytes.extend(self.elemDict[elemKey].bytes)
+            modeRawBytesList.append(rawBytes)
+        return modeRawBytesList
+    
+    def fromModeRawBytesList(self, modeRawBytesList):
+        """Argument should be a three element list.
+        One for each of the mouse "modes."
+        Each list element is a bytearray() type, read directly 
+        from the g600 config interface
+        """
+        for modeRawBytes, elemKey in zip(modeRawBytesList, self.elemDict):
+            self.elemDict[elemKey].bytes = modeRawBytes[0x1:]
+            
+    def toByteArray(self):
+        raise NotImplementedError()
+
+    def fromByteArray(self, byteArray):
+        raise NotImplementedError()
+
+    bytes = property(toByteArray, fromByteArray)
 
 if __name__ == '__main__':
     main(sys.argv)
 
-print("start test ")
-# x = ScalarFieldType()
-# print(x.simpleRepr)
-# jsonStr = json.dumps(x.simpleRepr, indent=4)
+# print("start test ")
+# # x = ScalarFieldType()
+# # print(x.simpleRepr)
+# # jsonStr = json.dumps(x.simpleRepr, indent=4)
 
-# arr = ArrayFieldType()
-# arr.bytes = bytearray([10, 42])
-# print(arr.simpleRepr)
-# jsonStr = json.dumps(arr.simpleRepr, indent=4)
-# print(jsonStr)
-# jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
-# arr2 = ArrayFieldType()
-# arr2.simpleRepr = jsonReload
-# print(arr2)
+# # arr = ArrayFieldType()
+# # arr.bytes = bytearray([10, 42])
+# # print(arr.simpleRepr)
+# # jsonStr = json.dumps(arr.simpleRepr, indent=4)
+# # print(jsonStr)
+# # jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
+# # arr2 = ArrayFieldType()
+# # arr2.simpleRepr = jsonReload
+# # print(arr2)
 
-# comp = CompositeFieldType()
-# comp.bytes = bytearray([10, 42])
-# print(comp.simpleRepr)
-# jsonStr = json.dumps(comp.simpleRepr, indent=4)
-# print(jsonStr)
-# jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
-# comp2 = CompositeFieldType()
-# comp2.simpleRepr = jsonReload
-# print(comp2)
-# print(type(comp2))
-# print(type(comp2.elemDict["f1"]))
+# # comp = CompositeFieldType()
+# # comp.bytes = bytearray([10, 42])
+# # print(comp.simpleRepr)
+# # jsonStr = json.dumps(comp.simpleRepr, indent=4)
+# # print(jsonStr)
+# # jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
+# # comp2 = CompositeFieldType()
+# # comp2.simpleRepr = jsonReload
+# # print(comp2)
+# # print(type(comp2))
+# # print(type(comp2.elemDict["f1"]))
 
-testPacket = bytearray([
-    0xf3, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x04, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x05, 0x14, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x5b, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x5d, 0x00, 0x00, 0x5e, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ])
-cp = G600ConfigPageType(testPacket)
-print(cp)
+# testPacket = bytearray([
+#     0xf3, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x04, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x05, 0x14, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x5b, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x5d, 0x00, 0x00, 0x5e, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ])
+# cp = G600ModeMouseMappingType(testPacket)
+# print(cp)
 
-print("end test ")
+# print("end test ")
 
     
