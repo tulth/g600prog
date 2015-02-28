@@ -2,14 +2,13 @@
 from __future__ import print_function
 import sys
 import argparse
+import pprint
 import itertools
 import json
 import collections
+import usb.core
+import usb.util
 
-IDVENDOR = 0x046d
-IDPRODUCT = 0xc24a
-G600_CONTROL_INTERFACE = 1
-G600_REPORT_IDS = (0x03f3, 0x03f4, 0x03f5)
 
 def main(argv):
     cfg = parseArgs(argv)
@@ -43,7 +42,7 @@ def parseArgs(argv):
     return cfg
 
 def readMouseMapping():
-    rawBytes = readUsbMouseMappingRawBytes(IDVENDOR, IDPRODUCT, )
+    rawBytes = readUsbMouseMappingRawBytes()
     # print(" ".join("{:02x}".format(x) for x in rawBytes))  # uncomment this to hexdump the byte array
     print("readMouseMapping")  # DELETEME
 
@@ -53,25 +52,30 @@ def writeMouseMappingToFile(fileHandle):
 def writeFileMappingToMouse(fileHandle):
     print("writeFileMappingToMouse(fileHandle")  # DELETEME
 
+################################################################################
+## usb read/write to the mouse control interface.
+## Operates on a 3 element sequence where each element is a bytearray()
+IDVENDOR = 0x046d
+IDPRODUCT = 0xc24a
+G600_CONTROL_INTERFACE = 1
+G600_REPORT_IDS = (0x03f3, 0x03f4, 0x03f5)  # one for each of the three mouse "modes"
 
 G600_READ_REQTYPE = 0xA1
 G600_READ_REQ = 0x01
 G600_READ_IDX = G600_CONTROL_INTERFACE
 G600_READ_LENGTH = 154
-def readUsbMouseMappingRawBytes(IDVENDOR, IDPRODUCT):
-    import usb.core
-    import usb.util
-
+def readUsbMouseMappingRawBytes(debug=False):
+    """Returns three element list.
+    One for each of the mouse "modes."
+    Each list element is a bytearray() type.
+    """
     dev = usb.core.find(idVendor=IDVENDOR, idProduct=IDPRODUCT)
-    G600_CONTROL_INTERFACE = 1
-
     if dev.is_kernel_driver_active(G600_CONTROL_INTERFACE) is True:
         # tell the kernel to detach
         dev.detach_kernel_driver(G600_CONTROL_INTERFACE)
         # claim the device
         usb.util.claim_interface(dev, G600_CONTROL_INTERFACE)
-
-    mappingRawBytes = bytearray()
+    modes = []
     for reportId in G600_REPORT_IDS:
         replyMsg = dev.ctrl_transfer(bmRequestType=G600_READ_REQTYPE, # this means control
                                      bRequest=G600_READ_REQ,
@@ -79,14 +83,43 @@ def readUsbMouseMappingRawBytes(IDVENDOR, IDPRODUCT):
                                      wIndex=G600_READ_IDX,
                                      data_or_wLength=G600_READ_LENGTH,
                                      timeout=None)
-        # print(" ".join("{:02x}".format(x) for x in replyMsg))  # uncomment this to hexdump the usb reply
-        mappingRawBytes.extend(replyMsg)
+        if debug: print(" ".join("{:02x}".format(x) for x in replyMsg))  # uncomment this to hexdump the usb reply
+        modes.append(replyMsg)
     # release the device
     usb.util.release_interface(dev, G600_CONTROL_INTERFACE)
     # reattach the device to the OS kernel
     dev.attach_kernel_driver(G600_CONTROL_INTERFACE)
+    # done
+    return modes
 
-    return mappingRawBytes
+G600_WRITE_REQTYPE = 0x21
+G600_WRITE_REQ = 0x09
+G600_WRITE_IDX = G600_CONTROL_INTERFACE
+def writeUsbMouseMappingRawBytes(modes):
+    """Argument should be a three element list.
+    One for each of the mouse "modes."
+    Each list element is a bytearray() type.
+    """
+    dev = usb.core.find(idVendor=IDVENDOR, idProduct=IDPRODUCT)
+    if dev.is_kernel_driver_active(G600_CONTROL_INTERFACE) is True:
+        # tell the kernel to detach
+        dev.detach_kernel_driver(G600_CONTROL_INTERFACE)
+        # claim the device
+        usb.util.claim_interface(dev, G600_CONTROL_INTERFACE)
+    for reportId, rawBytes in zip(G600_REPORT_IDS, modes):
+        l = dev.ctrl_transfer(bmRequestType=G600_WRITE_REQTYPE, # this means control
+                              bRequest=G600_WRITE_REQ,
+                              wValue=reportId,
+                              wIndex=G600_WRITE_IDX,
+                              data_or_wLength=rawBytes,
+                              timeout=None)
+        assert l == len(rawBytes)
+    # release the device
+    usb.util.release_interface(dev, G600_CONTROL_INTERFACE)
+    # reattach the device to the OS kernel
+    dev.attach_kernel_driver(G600_CONTROL_INTERFACE)
+    # done
+################################################################################
 
 ################################################################################
 ## raw scan code maps of known codes
@@ -287,19 +320,32 @@ KB_SCAN_CODES_DICT = {
 ################################################################################
 
 ################################################################################
-## base classes byte-streamable / simple representable (jsonifyable) types
+## basic classes that go to/from:
+##   bytearray
+##   json string
+##   simple representable types (array, ordered dict, integer, string)
 # types here:
 #   * base scalar (that defaults to a single byte)
 #   * homogeneous array
 #   * heterogeneous ordered dict
 constant0ByteIter = itertools.repeat(0)
 
-class ScalarFieldType(object):
-    ID_DEFAULT = "ScalarFieldType"
+class BaseFieldType(object):
+    """Base type the other classes, do not use this class directly"""
+    ID = "BaseField"
+    def __init__(self, byteArray=constant0ByteIter, id=None):
+        super(BaseFieldType, self).__init__()  # python2 compatibility
+        self.id = self.ID if id is None else id
+
+    def __str__(self):
+        return pprint.pformat(self.simpleRepr)
+
+        
+class ScalarFieldType(BaseFieldType):
+    ID = "ScalarField"
     BYTE_LEN = 1
     def __init__(self, byteArray=constant0ByteIter, id=None, byteLen=None):
-        super(ScalarFieldType, self).__init__()  # python2 compatibility
-        self.id = self.ID_DEFAULT if id is None else id
+        super(ScalarFieldType, self).__init__(byteArray, id)  # python2 compatibility
         self.byteLen = self.BYTE_LEN if byteLen is None else byteLen
         self.bytes = byteArray
 
@@ -311,10 +357,6 @@ class ScalarFieldType(object):
         for i, byte in zip(range(self.byteLen), iter(byteArray)):
             self._byteArray.append(byte)
 
-    def __str__(self):
-        import pprint
-        return pprint.pformat(self.simpleRepr)
-        
     def toSimpleRepr(self):
         if self.byteLen == 1:
             return self.bytes[0]
@@ -326,88 +368,197 @@ class ScalarFieldType(object):
             self.bytes = bytearray([arg])
         else:
             self.bytes = bytearray(arg)
-    
+
     bytes = property(toByteArray, fromByteArray)
     simpleRepr = property(toSimpleRepr, fromSimpleRepr)
 
-class ArrayFieldType(collections.UserList):
-    ID_DEFAULT = "ArrayFieldType"
+    
+class ArrayFieldType(BaseFieldType):
+    ID = "ArrayField"
     NUM_ELEM = 2
     ELEM_TYPE = ScalarFieldType
     def __init__(self, byteArray=constant0ByteIter, id=None, numElem=None, elemType=None, ):
         super(ArrayFieldType, self).__init__()  # python2 compatibility
-        self.id = self.ID_DEFAULT if id is None else id
+        self.id = self.ID if id is None else id
         self.numElem = self.NUM_ELEM if numElem is None else numElem
         self.elemType = self.ELEM_TYPE if elemType is None else elemType
+        self.elemList = []
+        byteArrayIter = iter(byteArray)
         for i in range(self.numElem):
-            self.append(self.elemType(iter(byteArray)))
+            self.elemList.append(self.elemType(byteArrayIter))
                         
     def toByteArray(self):
         retVal = bytearray()
-        for elem in self:
+        for elem in self.elemList:
             retVal.extend(elem.bytes)
         return retVal
 
     def fromByteArray(self, byteArray):
         byteArrayIter = iter(byteArray)
-        for elem in self:
+        for elem in self.elemList:
             elem.bytes = byteArrayIter
-
-    def __str__(self):
-        import pprint
-        return pprint.pformat(self.simpleRepr)
         
     def toSimpleRepr(self):
-        return [field.simpleRepr for field in self]
+        return [field.simpleRepr for field in self.elemList]
 
     def fromSimpleRepr(self, arg):
-        for elem, argElem in zip(self, arg):
+        for elem, argElem in zip(self.elemList, arg):
             elem.simpleRepr = argElem
     
     bytes = property(toByteArray, fromByteArray)
     simpleRepr = property(toSimpleRepr, fromSimpleRepr)
 
 
-class CompositeFieldType(collections.OrderedDict):
-    ID_DEFAULT = "CompositeFieldType"
+class CompositeFieldType(BaseFieldType):
+    ID = "CompositeField"
     KTM = [("f1", ScalarFieldType), ("f2", ScalarFieldType)]
     def __init__(self, byteArray=constant0ByteIter, id=None, keyToTypeMap=None, ):
         super(CompositeFieldType, self).__init__()
-        self.id = self.ID_DEFAULT if id is None else id
-        self.keyToTypeMap = self.KTM if keyToTypeMap is None else keyToTypeMap
-        for fieldId in self.ktm:
-            self[fieldId] = self.ktm[fieldId](iter(byteArray))
+        self.id = self.ID if id is None else id
+        self.keyToTypeMap = collections.OrderedDict(self.KTM) if keyToTypeMap is None else collections.OrderedDict(keyToTypeMap)
+        self.elemDict = collections.OrderedDict()
+        byteArrayIter = iter(byteArray)
+        for fieldId in self.keyToTypeMap:
+            self.elemDict[fieldId] = self.keyToTypeMap[fieldId](byteArrayIter)
 
     def toByteArray(self):
         retVal = bytearray()
-        for fieldId in self:
-            retVal.extend(self[fieldId].bytes)
+        for fieldId in self.elemDict:
+            retVal.extend(self.elemDict[fieldId].bytes)
         return retVal
 
     def fromByteArray(self, byteArray):
         byteArrayIter = iter(byteArray)
-        for fieldId in self:
-            self[fieldId].bytes = byteArrayIter
+        for fieldId in self.elemDict:
+            self.elemDict[fieldId].bytes = byteArrayIter
 
+    def __str__(self):
+        import pprint
+        return pprint.pformat(self.simpleRepr)
+        
+    def toSimpleRepr(self):
+        simpleDict = collections.OrderedDict()
+        for fieldId in self.elemDict:
+            simpleDict[fieldId] = self.elemDict[fieldId].toSimpleRepr()
+        return simpleDict
+
+    def fromSimpleRepr(self, arg):
+        for fieldId, argId in zip(self.elemDict.keys(), arg.keys()):
+            self.elemDict[fieldId].fromSimpleRepr(arg[argId])
+    
     bytes = property(toByteArray, fromByteArray)
+    simpleRepr = property(toSimpleRepr, fromSimpleRepr)
 ################################################################################
+
+################################################################################
+## derived g600 config field types
+
+################################################################################
+class G600MouseScanCodeType(ScalarFieldType):
+    ID = "mouseScanCode"
+    # FIXME
+    
+class KbModifierBitWiseType(ScalarFieldType):
+    ID = "kbModifier"
+    # FIXME
+
+class KbScanCodeType(ScalarFieldType):
+    ID = "kbScanCode"
+    # FIXME
+
+class G600PollRateType(ScalarFieldType):
+    ID = "pollRate"
+    # FIXME
+
+class G600DPIType(ScalarFieldType):
+    ID = "dpi"
+    # FIXME
+
+class G600ModeScalarType(ScalarFieldType):
+    ID = "mode (1, 2, or 3)"
+    
+class G600MouseButtonActionType(CompositeFieldType):
+    KTM = [(G600MouseScanCodeType.ID, G600MouseScanCodeType),
+           (KbModifierBitWiseType.ID, KbModifierBitWiseType),
+           (KbScanCodeType.ID, KbScanCodeType),
+           ]
+
+class G600DPIGroupType(CompositeFieldType):
+    KTM = [('ShiftDPI', G600DPIType),
+           ('DefaultDPIIndex', ScalarFieldType),
+           ('DPI1', G600DPIType),
+           ('DPI2', G600DPIType),
+           ('DPI3', G600DPIType),
+           ('DPI4', G600DPIType),
+           ]
+
+class G600LedColorsType(CompositeFieldType):
+    KTM = [('Red', ScalarFieldType),
+           ('Green', ScalarFieldType),
+           ('Blue', ScalarFieldType),
+           ]
+
+class G600ButtonMapType(ArrayFieldType):
+    ID = "ButtonMap"
+    NUM_ELEM = 20
+    ELEM_TYPE = G600MouseButtonActionType
+
+class UnknownBytesArray0(ArrayFieldType):
+    ID = "Unknown"
+    NUM_ELEM = 0x4b-0x44
+    ELEM_TYPE = ScalarFieldType
+
+class UnknownBytesArray1(ArrayFieldType):
+    ID = "Unknown"
+    NUM_ELEM = 0x5f-0x52
+    ELEM_TYPE = ScalarFieldType
+
+class G600ConfigPageType(CompositeFieldType):
+    ID = "ConfigPage"
+    KTM = [("ModeNum", G600ModeScalarType),
+           ("LedColors", G600LedColorsType),
+           ("MaybeLighting", UnknownBytesArray0),
+           ("PollRate", G600PollRateType),
+           ("DPI", G600DPIGroupType),
+           ("Unknown1", UnknownBytesArray1),
+           ("buttonMapNormal", G600ButtonMapType),
+           ("buttonMapShift", G600ButtonMapType),
+    ]
 
 if __name__ == '__main__':
     main(sys.argv)
 
 print("start test ")
-x = ScalarFieldType()
-print(x.simpleRepr)
-jsonStr = json.dumps(x.simpleRepr, indent=4)
-arr = ArrayFieldType()
-arr.bytes = bytearray([10, 42])
-print(arr.simpleRepr)
-jsonStr = json.dumps(arr.simpleRepr, indent=4)
-print(jsonStr)
-jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
-arr2 = ArrayFieldType()
-arr2.simpleRepr = jsonReload
-print(arr2)
+# x = ScalarFieldType()
+# print(x.simpleRepr)
+# jsonStr = json.dumps(x.simpleRepr, indent=4)
+
+# arr = ArrayFieldType()
+# arr.bytes = bytearray([10, 42])
+# print(arr.simpleRepr)
+# jsonStr = json.dumps(arr.simpleRepr, indent=4)
+# print(jsonStr)
+# jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
+# arr2 = ArrayFieldType()
+# arr2.simpleRepr = jsonReload
+# print(arr2)
+
+# comp = CompositeFieldType()
+# comp.bytes = bytearray([10, 42])
+# print(comp.simpleRepr)
+# jsonStr = json.dumps(comp.simpleRepr, indent=4)
+# print(jsonStr)
+# jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
+# comp2 = CompositeFieldType()
+# comp2.simpleRepr = jsonReload
+# print(comp2)
+# print(type(comp2))
+# print(type(comp2.elemDict["f1"]))
+
+testPacket = bytearray([
+    0xf3, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x04, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x05, 0x14, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x5b, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x5d, 0x00, 0x00, 0x5e, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ])
+cp = G600ConfigPageType(testPacket)
+print(cp)
 
 print("end test ")
 
