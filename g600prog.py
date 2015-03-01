@@ -7,6 +7,7 @@ import pprint
 import itertools
 import json
 import collections
+import time
 import usb.core
 import usb.util
 
@@ -41,18 +42,18 @@ def readMouseMappingFromFile(fileHandle, debug):
     return mouseMapping
 
 def saveMouseMappingToFile(fileName, forceWrite, mouseMapping):
-    print("Saving the read mouse config to disk...")
+    print("Saving the mouse config to disk...")
     if os.path.isfile(fileName) and not forceWrite:
         raise Exception("File already exists and overwrite-file flag not set")
     with open(fileName,"w") as fileHandle:
         fileHandle.write(mouseMapping.json)
-    print("...done saving the read mouse config to disk")
+    print("...done the read mouse config to disk")
 
 def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
-    print("Writing the read mouse config to the mouse...")
+    print("Writing the mouse config to the mouse...")
     rawModeBytesList = mouseMapping.toModeRawBytesList()
     writeUsbMouseMappingRawBytes(rawModeBytesList, debug, dryRun)
-    print("...done writing the read mouse config to the mouse")
+    print("...done writing read mouse config to the mouse")
 
 def parseArgs(argv):
     parser = argparse.ArgumentParser(description='Utility to read/write logitech g600 mouse key maps.  In most cases, this requires root (ie, run sudo <this script>)')
@@ -154,6 +155,7 @@ def writeUsbMouseMappingRawBytes(modes, debug=False, dryRun=True):
                                   data_or_wLength=rawBytes,
                                   timeout=None)
             assert l == len(rawBytes)
+            time.sleep(1.1)
     # release the device
     usb.util.release_interface(dev, G600_CONTROL_INTERFACE)
     # reattach the device to the OS kernel
@@ -587,11 +589,49 @@ class KbScanCodeType(ScalarFieldType):
 
 class G600PollRateType(ScalarFieldType):
     ID = "pollRate"
-    # FIXME
+
+    def calcDerivedPollRate(self, b):
+        derivedPollRate = int(1000 / (1 + int(b)))
+        return derivedPollRate
+        
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        return self.calcDerivedPollRate(b)
+
+    def fromSimpleRepr(self, arg):
+        b  = int((1000 // int(arg)) - 1)
+        if b < 0:
+            b = 0
+        if b > 255:
+            b = 255
+        argActual = self.calcDerivedPollRate(b)
+        if argActual != arg:
+            print("Warning! Requested pollrate of {} resulted in a actual pollrate of {}".format(arg, argActual))
+        self.bytes[0] = b 
 
 class G600DPIType(ScalarFieldType):
     ID = "dpi"
-    # FIXME
+
+    def calcDerivedDpi(self, b):
+        derivedDpi = 50 * b
+        return derivedDpi
+        
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        return self.calcDerivedDpi(b)
+
+    def fromSimpleRepr(self, arg):
+        b  = int((arg)//50)
+        if b < 0:
+            b = 0
+        if b > 255:
+            b = 255
+        if arg != 0 and b == 0:
+            b = 1
+        argActual = self.calcDerivedDpi(b)
+        if argActual != arg:
+            print("Warning! Requested dpi of {} resulted in a actual dpi of {}".format(arg, argActual))
+        self.bytes[0] = b 
 
 class G600ModeScalarType(ScalarFieldType):
     ID = "mode (1, 2, or 3)"
@@ -617,9 +657,29 @@ class G600LedColorsType(CompositeFieldType):
            ('Blue', ScalarFieldType),
            ]
 
-class G600ButtonMapType(ArrayFieldType):
+class G600ButtonMapType(CompositeFieldType):
     ID = "ButtonMap"
-    NUM_ELEM = 20
+    KTM = [('g1 (left button)', G600MouseButtonActionType),
+           ('g2 (right button)', G600MouseButtonActionType),
+           ('g3 (middle button)', G600MouseButtonActionType),
+           ('g4 (mousewheel left)', G600MouseButtonActionType),
+           ('g5 (mousewheel right)', G600MouseButtonActionType),
+           ('g6 (side/gshift)', G600MouseButtonActionType),
+           ('g7 (button back)', G600MouseButtonActionType),
+           ('g8 (button forward)', G600MouseButtonActionType),
+           ('g9 (side buttonpad)', G600MouseButtonActionType),
+           ('g10 (side buttonpad)', G600MouseButtonActionType),
+           ('g11 (side buttonpad)', G600MouseButtonActionType),
+           ('g12 (side buttonpad)', G600MouseButtonActionType),
+           ('g13 (side buttonpad)', G600MouseButtonActionType),
+           ('g14 (side buttonpad)', G600MouseButtonActionType),
+           ('g15 (side buttonpad)', G600MouseButtonActionType),
+           ('g16 (side buttonpad)', G600MouseButtonActionType),
+           ('g17 (side buttonpad)', G600MouseButtonActionType),
+           ('g18 (side buttonpad)', G600MouseButtonActionType),
+           ('g19 (side buttonpad)', G600MouseButtonActionType),
+           ('g20 (side buttonpad)', G600MouseButtonActionType),
+           ]
     ELEM_TYPE = G600MouseButtonActionType
 
 class UnknownBytesArray0(ArrayFieldType):
@@ -645,15 +705,15 @@ class G600ModeMouseMappingType(CompositeFieldType):
            ("DPI", G600DPIGroupType),
            ("Unknown1", UnknownBytesArray1),
            ("buttonMapNormal", G600ButtonMapType),
-           ("Unknown2", UnknownBytesArray2),
+           ("padding?", UnknownBytesArray2),
            ("buttonMapShift", G600ButtonMapType),
     ]
 
 class G600MouseMapping(CompositeFieldType):
     ID = "MouseMapping"
-    KTM = [("Mode0", G600ModeMouseMappingType),
-           ("Mode1", G600ModeMouseMappingType),
+    KTM = [("Mode1 (default)", G600ModeMouseMappingType),
            ("Mode2", G600ModeMouseMappingType),
+           ("Mode3", G600ModeMouseMappingType),
     ]
 
     def toModeRawBytesList(self):
