@@ -1,0 +1,749 @@
+{
+    "Mode1 (default)": {
+        "LedColors": {
+            "Red": 0,
+            "Green": 0,
+            "Blue": 0
+        },
+        "MaybeLighting": [
+            2,
+            6,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "PollRate": 1000,
+        "DPI": {
+            "ShiftDPI": 400,
+            "DefaultDPIIndex": 2,
+            "DPI1": 400,
+            "DPI2": 1200,
+            "DPI3": 2000,
+            "DPI4": 3200
+        },
+        "Unknown1": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "buttonMapNormal": {
+            "g1 (left button)": {
+                "mouseScanCode": "LEFT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "RIGHT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "MIDDLE_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "GSHIFT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LSHIFT",
+                "kbScanCode": "KC_B"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_1"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_2"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_3"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_4"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_5"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_6"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_7"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_8"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_9"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_0"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_MINUS"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_EQUAL"
+            }
+        },
+        "padding?": [
+            8,
+            4,
+            0
+        ],
+        "buttonMapShift": {
+            "g1 (left button)": {
+                "mouseScanCode": "LEFT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "RIGHT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "MIDDLE_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "GSHIFT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LSHIFT",
+                "kbScanCode": "KC_B"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_1"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_2"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_3"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_4"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_5"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_6"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_7"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_8"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_9"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_0"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_MINUS"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_EQUAL"
+            }
+        }
+    },
+    "Mode2": {
+        "LedColors": {
+            "Red": 255,
+            "Green": 255,
+            "Blue": 255
+        },
+        "MaybeLighting": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "PollRate": 1000,
+        "DPI": {
+            "ShiftDPI": 400,
+            "DefaultDPIIndex": 2,
+            "DPI1": 400,
+            "DPI2": 1200,
+            "DPI3": 2000,
+            "DPI4": 3200
+        },
+        "Unknown1": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "buttonMapNormal": {
+            "g1 (left button)": {
+                "mouseScanCode": "LEFT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "RIGHT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "MIDDLE_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "GSHIFT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LSHIFT",
+                "kbScanCode": "KC_B"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_1"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_2"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_3"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_4"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_5"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_6"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_7"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_8"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_9"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_0"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_MINUS"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_KP_PLUS"
+            }
+        },
+        "padding?": [
+            255,
+            255,
+            255
+        ],
+        "buttonMapShift": {
+            "g1 (left button)": {
+                "mouseScanCode": "LEFT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "RIGHT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "MIDDLE_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "GSHIFT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LSHIFT",
+                "kbScanCode": "KC_B"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_1"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_2"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_3"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_4"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_5"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_6"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_7"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_8"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_9"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_0"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_MINUS"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_KP_PLUS"
+            }
+        }
+    },
+    "Mode3": {
+        "LedColors": {
+            "Red": 0,
+            "Green": 255,
+            "Blue": 0
+        },
+        "MaybeLighting": [
+            1,
+            4,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "PollRate": 1000,
+        "DPI": {
+            "ShiftDPI": 400,
+            "DefaultDPIIndex": 2,
+            "DPI1": 400,
+            "DPI2": 1200,
+            "DPI3": 2000,
+            "DPI4": 3200
+        },
+        "Unknown1": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "buttonMapNormal": {
+            "g1 (left button)": {
+                "mouseScanCode": "LEFT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "RIGHT_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "MIDDLE_CLICK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "DPI_SHIFT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "DPI_CYCLING",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_1"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_2"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_3"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_4"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_5"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_6"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "DPI_UP",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "DPI_DEFAULT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "FORWARD",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "DPI_DOWN",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_E"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "BACK",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            }
+        },
+        "padding?": [
+            8,
+            4,
+            0
+        ],
+        "buttonMapShift": {
+            "g1 (left button)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LGUI",
+                "kbScanCode": "KC_A"
+            },
+            "g2 (right button)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g3 (middle button)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LSHIFT",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g4 (mousewheel left)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL+KC_LSHIFT",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g5 (mousewheel right)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LALT",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g6 (side/gshift)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL+KC_LALT",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g7 (button back)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LCTRL+KC_LSHIFT+KC_LALT+KC_RCTRL",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g8 (button forward)": {
+                "mouseScanCode": "MODE_SWITCH",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g9 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "KC_LALT+KC_RCTRL",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g10 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g11 (side buttonpad)": {
+                "mouseScanCode": "UNDEFINED030",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_Q"
+            },
+            "g12 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g13 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g14 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g15 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g16 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g17 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g18 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g19 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            },
+            "g20 (side buttonpad)": {
+                "mouseScanCode": "NO_MOUSEBUT",
+                "kbModifier": "NO_MOD",
+                "kbScanCode": "KC_NOKEY"
+            }
+        }
+    }
+}
