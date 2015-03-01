@@ -1,6 +1,7 @@
 #!/bin/env python
 from __future__ import print_function
 import sys
+import os
 import argparse
 import pprint
 import itertools
@@ -17,41 +18,13 @@ def main(argv):
         if cfg.print:
             print("Printing mouse config...")
             print(mouseMapping)
-            if cfg.debug:
-                for mode in mouseMapping.elemDict:
-                    modeBytes = mouseMapping.elemDict[mode].bytes
-                    print(" ".join("0x{:02x}".format(x) for x in modeBytes))
-        if (cfg.read_file is not None):
-            saveMouseMappingToFile(cfg.read_file, mouseMapping)
+        if cfg.read_file is not None:
+            saveMouseMappingToFile(cfg.read_file, cfg.overwrite_file, mouseMapping)
     if cfg.write_file is not None:
         mouseMapping = readMouseMappingFromFile(cfg.write_file, cfg.debug)
         writeMouseMappingToMouse(mouseMapping, cfg.debug, cfg.dry_run)
 
-
-def parseArgs(argv):
-    parser = argparse.ArgumentParser(description='Utility to read/write logitech g600 mouse key maps.  In most cases, this requires root (ie, run sudo <this script>)')
-    rdWrGroup = parser.add_mutually_exclusive_group()
-    parser.add_argument('-p', '--print',
-                        help='Print the current mappings stored in the mouse',
-                        action='store_true',)
-    rdWrGroup.add_argument('-r', '--read-file',
-                           type=argparse.FileType('w'),
-                           help='Read current settings stored in the mouse and save to the file specified',
-    )
-    rdWrGroup.add_argument('-w', '--write-file',
-                           type=argparse.FileType('r'),
-                           help='Write the settings in the specified file to the mouse',
-    )
-    parser.add_argument('-n', '--dry-run',
-                        help='For testing writes to the mouse, intended to be used in conjunction with debug, will do everything except for actually send the usb programming messages.',
-                        action='store_true',)
-    parser.add_argument('-d', '--debug',
-                        help='Turn on debug printing',
-                        action='store_true',)
-
-    cfg = parser.parse_args()
-    return cfg
-
+        
 def readMouseMappingFromMouse(debug):
     print("Reading mouse config from mouse...")
     mouseMapping = G600MouseMapping()
@@ -67,9 +40,12 @@ def readMouseMappingFromFile(fileHandle, debug):
     print("... done reading mouse config from file")
     return mouseMapping
 
-def saveMouseMappingToFile(fileHandle, mouseMapping):
+def saveMouseMappingToFile(fileName, forceWrite, mouseMapping):
     print("Saving the read mouse config to disk...")
-    fileHandle.write(mouseMapping.json)
+    if os.path.isfile(fileName) and not forceWrite:
+        raise Exception("File already exists and overwrite-file flag not set")
+    with open(fileName,"w") as fileHandle:
+        fileHandle.write(mouseMapping.json)
     print("...done saving the read mouse config to disk")
 
 def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
@@ -77,6 +53,35 @@ def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
     rawModeBytesList = mouseMapping.toModeRawBytesList()
     writeUsbMouseMappingRawBytes(rawModeBytesList, debug, dryRun)
     print("...done writing the read mouse config to the mouse")
+
+def parseArgs(argv):
+    parser = argparse.ArgumentParser(description='Utility to read/write logitech g600 mouse key maps.  In most cases, this requires root (ie, run sudo <this script>)')
+    if len(argv) == 1: 
+        argv.append('-h') 
+
+    rdWrGroup = parser.add_mutually_exclusive_group()
+    parser.add_argument('-p', '--print',
+                        help='Print the current mappings stored in the mouse',
+                        action='store_true',)
+    rdWrGroup.add_argument('-r', '--read-file',
+                           help='Read current settings stored in the mouse and save to the file specified',
+    )
+    parser.add_argument('-f', '--overwrite-file',
+                        help='Force overwrite of settings file if it already exists during read-file operation.',
+                        action='store_true',)
+    rdWrGroup.add_argument('-w', '--write-file',
+                           type=argparse.FileType('r'),
+                           help='Write the settings in the specified file to the mouse',
+    )
+    parser.add_argument('-n', '--dry-run',
+                        help='For testing writes to the mouse, intended to be used in conjunction with debug, will do everything except for actually send the usb programming messages.',
+                        action='store_true',)
+    parser.add_argument('-d', '--debug',
+                        help='Turn on debug printing',
+                        action='store_true',)
+
+    cfg = parser.parse_args()
+    return cfg
 
 ################################################################################
 ## usb read/write to the mouse control interface.
@@ -157,11 +162,11 @@ def writeUsbMouseMappingRawBytes(modes, debug=False, dryRun=True):
     # done
 ################################################################################
 
+################################################################################
+## raw scan code maps of known codes
 def invMap(mapDict):
     return {v: k for k, v in mapDict.items()}
 
-################################################################################
-## raw scan code maps of known codes
 MOUSE_SCAN_CODES_DICT = {0x00  :  "NO_MOUSEBUT" ,
                          0x01  :  "LEFT_CLICK"  ,
                          0x02  :  "RIGHT_CLICK" ,
@@ -683,39 +688,3 @@ class G600MouseMapping(CompositeFieldType):
 
 if __name__ == '__main__':
     main(sys.argv)
-
-# print("start test ")
-# # x = ScalarFieldType()
-# # print(x.simpleRepr)
-# # jsonStr = json.dumps(x.simpleRepr, indent=4)
-
-# # arr = ArrayFieldType()
-# # arr.bytes = bytearray([10, 42])
-# # print(arr.simpleRepr)
-# # jsonStr = json.dumps(arr.simpleRepr, indent=4)
-# # print(jsonStr)
-# # jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
-# # arr2 = ArrayFieldType()
-# # arr2.simpleRepr = jsonReload
-# # print(arr2)
-
-# # comp = CompositeFieldType()
-# # comp.bytes = bytearray([10, 42])
-# # print(comp.simpleRepr)
-# # jsonStr = json.dumps(comp.simpleRepr, indent=4)
-# # print(jsonStr)
-# # jsonReload = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
-# # comp2 = CompositeFieldType()
-# # comp2.simpleRepr = jsonReload
-# # print(comp2)
-# # print(type(comp2))
-# # print(type(comp2.elemDict["f1"]))
-
-# testPacket = bytearray([
-#     0xf3, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00, 0x04, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x05, 0x14, 0x00, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x5b, 0x00, 0x00, 0x5c, 0x00, 0x00, 0x5d, 0x00, 0x00, 0x5e, 0x00, 0x00, 0x5f, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08, 0x04, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ])
-# cp = G600ModeMouseMappingType(testPacket)
-# print(cp)
-
-# print("end test ")
-
-    
