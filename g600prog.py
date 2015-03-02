@@ -375,11 +375,22 @@ KB_SCAN_CODES_INVDICT = invMap(KB_SCAN_CODES_DICT) # for reverse lookup
 ##   json string
 ##   simple representable types (array, ordered dict, integer, string)
 # types here:
+<<<<<<< HEAD
 #   * base scalar (that defaults to a single byte)
+=======
+#   * singleByte
+>>>>>>> release-0.1
 #   * homogeneous array
 #   * heterogeneous ordered dict
 constant0ByteIter = itertools.repeat(0)
 
+<<<<<<< HEAD
+=======
+class MappingBuildError(Exception): pass
+class FromJsonError(Exception): pass
+
+
+>>>>>>> release-0.1
 class BaseFieldType(object):
     """Base type the other classes, do not use this class directly"""
     ID = "BaseField"
@@ -394,6 +405,7 @@ class BaseFieldType(object):
         return json.dumps(self.simpleRepr, indent=4)
     
     def fromJson(self, jsonStr):
+<<<<<<< HEAD
         self.simpleRepr = json.loads(jsonStr, object_pairs_hook=collections.OrderedDict)
 
     json = property(toJson, fromJson)
@@ -425,6 +437,43 @@ class ScalarFieldType(BaseFieldType):
             self.bytes = bytearray([arg])
         else:
             self.bytes = bytearray(arg)
+=======
+        try:
+            self.simpleRepr = json.loads(jsonStr)
+        except MappingBuildError as err:
+            errStr = "{id}: Unable to build from json string; ".format(id=self.id)
+            raise FromJsonError(errStr + str(err)) from err
+
+    json = property(toJson, fromJson)
+    
+class SingleByteFieldType(BaseFieldType):
+    ID = "SingleByteField"
+    def __init__(self, byteArray=constant0ByteIter, id=None, byteLen=None):
+        super(SingleByteFieldType, self).__init__(byteArray, id)  # python2 compatibility
+        self.bytes = byteArray
+
+    def toByteArray(self):
+        return bytearray([self._b])
+
+    def fromByteArray(self, byteArray):
+        for i, byte in zip(range(1), iter(byteArray)):
+            if byte in range(0, 256):
+                self._b = byte
+            else:
+                errStr = "{id}: byte must be in range(0, 256)".format(id=self.id)
+                raise MappingBuildError(errStr)
+
+    def toSimpleRepr(self):
+        return self._b
+
+    def fromSimpleRepr(self, arg):
+        try:
+            bArr = bytearray([arg])
+        except ValueError as err:
+            errStr = "{id}: ".format(id=self.id)
+            raise MappingBuildError(errStr + str(err)) from err
+        self.fromByteArray(bArr)
+>>>>>>> release-0.1
 
     bytes = property(toByteArray, fromByteArray)
     simpleRepr = property(toSimpleRepr, fromSimpleRepr)
@@ -433,7 +482,13 @@ class ScalarFieldType(BaseFieldType):
 class ArrayFieldType(BaseFieldType):
     ID = "ArrayField"
     NUM_ELEM = 2
+<<<<<<< HEAD
     ELEM_TYPE = ScalarFieldType
+=======
+    ELEM_TYPE = SingleByteFieldType
+    ERR_FMT_PREFIX = "{id}[{index}]=>"
+    
+>>>>>>> release-0.1
     def __init__(self, byteArray=constant0ByteIter, id=None, numElem=None, elemType=None, ):
         super(ArrayFieldType, self).__init__()  # python2 compatibility
         self.id = self.ID if id is None else id
@@ -458,9 +513,28 @@ class ArrayFieldType(BaseFieldType):
     def toSimpleRepr(self):
         return [field.simpleRepr for field in self.elemList]
 
+<<<<<<< HEAD
     def fromSimpleRepr(self, arg):
         for elem, argElem in zip(self.elemList, arg):
             elem.simpleRepr = argElem
+=======
+    def _assertArraySane(self, arg):
+        if len(self.elemList) != len(arg):
+            errStr = self.ERR_FMT_PREFIX.format(id=self.id, index="")
+            errStr += "array length mismatch: expected {expectLen} elements, saw {actualLen} elements"
+            errStr = errStr.format(id=self.id, expectLen=len(self.elemList), actualLen=len(arg))
+            raise MappingBuildError(errStr)
+
+    def fromSimpleRepr(self, arg):
+        self._assertArraySane(arg)
+        for index, elem in enumerate(self.elemList):
+            try:
+                elem.simpleRepr = arg[index]
+            except MappingBuildError as err:
+                prependStr = self.ERR_FMT_PREFIX.format(id=self.id, index=index)
+                err.args = (prependStr + err.args[0],) + err.args[1:]
+                raise err
+>>>>>>> release-0.1
     
     bytes = property(toByteArray, fromByteArray)
     simpleRepr = property(toSimpleRepr, fromSimpleRepr)
@@ -468,7 +542,13 @@ class ArrayFieldType(BaseFieldType):
 
 class CompositeFieldType(BaseFieldType):
     ID = "CompositeField"
+<<<<<<< HEAD
     KTM = [("f1", ScalarFieldType), ("f2", ScalarFieldType)]
+=======
+    KTM = [("f1", SingleByteFieldType), ("f2", SingleByteFieldType)]
+    ERR_FMT_PREFIX = "{id}[{field}]=>"
+    
+>>>>>>> release-0.1
     def __init__(self, byteArray=constant0ByteIter, id=None, keyToTypeMap=None, ):
         super(CompositeFieldType, self).__init__()
         self.id = self.ID if id is None else id
@@ -495,9 +575,30 @@ class CompositeFieldType(BaseFieldType):
             simpleDict[fieldId] = self.elemDict[fieldId].toSimpleRepr()
         return simpleDict
 
+<<<<<<< HEAD
     def fromSimpleRepr(self, arg):
         for fieldId, argId in zip(self.elemDict.keys(), arg.keys()):
             self.elemDict[fieldId].fromSimpleRepr(arg[argId])
+=======
+    def _assertFieldsSane(self, arg):
+        missingFields = set(self.elemDict.keys()) - set(arg.keys())
+        extraFields = set(arg.keys()) - set(self.elemDict.keys())
+        if len(missingFields) > 0:
+            errStr = self.ERR_FMT_PREFIX.format(id=self.id, field="")
+            errStr += "missing fields: {missing}, extra fields {extra}".format(missing=missingFields,
+                                                                               extra=extraFields)
+            raise MappingBuildError(errStr)
+        
+    def fromSimpleRepr(self, arg):
+        self._assertFieldsSane(arg)
+        for fieldId in self.elemDict:
+            try:
+                self.elemDict[fieldId].fromSimpleRepr(arg[fieldId])
+            except MappingBuildError as err:
+                prependStr = self.ERR_FMT_PREFIX.format(id=self.id, field=fieldId)
+                err.args = (prependStr + err.args[0],) + err.args[1:]
+                raise err
+>>>>>>> release-0.1
     
     bytes = property(toByteArray, fromByteArray)
     simpleRepr = property(toSimpleRepr, fromSimpleRepr)
@@ -511,7 +612,11 @@ def cleanStr(arg):
     return arg.strip().upper()
 
 def convertErr(arg, id):
+<<<<<<< HEAD
     raise Exception("{} unable to convert representation of {}".format(id, arg))
+=======
+    raise MappingBuildError("{} unable to convert representation of {}".format(id, arg))
+>>>>>>> release-0.1
 
 def undefinedConvert(arg, id):
     u = "UNDEFINED"
@@ -523,7 +628,11 @@ def undefinedConvert(arg, id):
             raise convertErr(arg, id)
     return int(argClean[len(u):])
 
+<<<<<<< HEAD
 class G600MouseScanCodeType(ScalarFieldType):
+=======
+class G600MouseScanCodeType(SingleByteFieldType):
+>>>>>>> release-0.1
     ID = "mouseScanCode"
 
     def toSimpleRepr(self):
@@ -539,10 +648,17 @@ class G600MouseScanCodeType(ScalarFieldType):
             b = MOUSE_SCAN_CODES_INVDICT[argClean]
         else:
             b = undefinedConvert(argClean, self.id)
+<<<<<<< HEAD
         self.bytes[0] = b 
 
 
 class KbModifierBitWiseType(ScalarFieldType):
+=======
+        self.bytes = [b] 
+
+
+class KbModifierBitWiseType(SingleByteFieldType):
+>>>>>>> release-0.1
     ID = "kbModifier"
     def toSimpleRepr(self):
         b = self.bytes[0]
@@ -567,10 +683,17 @@ class KbModifierBitWiseType(ScalarFieldType):
                     convertErr(modifierCode, self.id)
                 else:
                     b += 2 ** (KB_MODIFIER_BIT_CODES_INVDICT[modifierCode])
+<<<<<<< HEAD
         self.bytes[0] = b 
 
 
 class KbScanCodeType(ScalarFieldType):
+=======
+        self.bytes = [b] 
+
+
+class KbScanCodeType(SingleByteFieldType):
+>>>>>>> release-0.1
     ID = "kbScanCode"
     def toSimpleRepr(self):
         b = self.bytes[0]
@@ -585,9 +708,15 @@ class KbScanCodeType(ScalarFieldType):
             b = KB_SCAN_CODES_INVDICT[argClean]
         else:
             b = undefinedConvert(argClean, self.id)
+<<<<<<< HEAD
         self.bytes[0] = b 
 
 class G600PollRateType(ScalarFieldType):
+=======
+        self.bytes = [b] 
+
+class G600PollRateType(SingleByteFieldType):
+>>>>>>> release-0.1
     ID = "pollRate"
 
     def calcDerivedPollRate(self, b):
@@ -607,9 +736,15 @@ class G600PollRateType(ScalarFieldType):
         argActual = self.calcDerivedPollRate(b)
         if argActual != arg:
             print("Warning! Requested pollrate of {} resulted in a actual pollrate of {}".format(arg, argActual))
+<<<<<<< HEAD
         self.bytes[0] = b 
 
 class G600DPIType(ScalarFieldType):
+=======
+        self.bytes = [b] 
+
+class G600DPIType(SingleByteFieldType):
+>>>>>>> release-0.1
     ID = "dpi"
 
     def calcDerivedDpi(self, b):
@@ -631,11 +766,16 @@ class G600DPIType(ScalarFieldType):
         argActual = self.calcDerivedDpi(b)
         if argActual != arg:
             print("Warning! Requested dpi of {} resulted in a actual dpi of {}".format(arg, argActual))
+<<<<<<< HEAD
         self.bytes[0] = b 
 
 class G600ModeScalarType(ScalarFieldType):
     ID = "mode (1, 2, or 3)"
     
+=======
+        self.bytes = [b] 
+
+>>>>>>> release-0.1
 class G600MouseButtonActionType(CompositeFieldType):
     KTM = [(G600MouseScanCodeType.ID, G600MouseScanCodeType),
            (KbModifierBitWiseType.ID, KbModifierBitWiseType),
@@ -644,7 +784,11 @@ class G600MouseButtonActionType(CompositeFieldType):
 
 class G600DPIGroupType(CompositeFieldType):
     KTM = [('ShiftDPI', G600DPIType),
+<<<<<<< HEAD
            ('DefaultDPIIndex', ScalarFieldType),
+=======
+           ('DefaultDPIIndex', SingleByteFieldType),
+>>>>>>> release-0.1
            ('DPI1', G600DPIType),
            ('DPI2', G600DPIType),
            ('DPI3', G600DPIType),
@@ -652,9 +796,15 @@ class G600DPIGroupType(CompositeFieldType):
            ]
 
 class G600LedColorsType(CompositeFieldType):
+<<<<<<< HEAD
     KTM = [('Red', ScalarFieldType),
            ('Green', ScalarFieldType),
            ('Blue', ScalarFieldType),
+=======
+    KTM = [('Red', SingleByteFieldType),
+           ('Green', SingleByteFieldType),
+           ('Blue', SingleByteFieldType),
+>>>>>>> release-0.1
            ]
 
 class G600ButtonMapType(CompositeFieldType):
@@ -685,11 +835,16 @@ class G600ButtonMapType(CompositeFieldType):
 class UnknownBytesArray0(ArrayFieldType):
     ID = "Unknown"
     NUM_ELEM = 0x4b-0x44
+<<<<<<< HEAD
     ELEM_TYPE = ScalarFieldType
+=======
+    ELEM_TYPE = SingleByteFieldType
+>>>>>>> release-0.1
 
 class UnknownBytesArray1(ArrayFieldType):
     ID = "Unknown"
     NUM_ELEM = 0x5f-0x52
+<<<<<<< HEAD
     ELEM_TYPE = ScalarFieldType
 
 class UnknownBytesArray2(ArrayFieldType):
@@ -701,12 +856,25 @@ class G600ModeMouseMappingType(CompositeFieldType):
     ID = "ConfigMode"
     KTM = [("LedColors", G600LedColorsType),
            ("MaybeLighting", UnknownBytesArray0),
+=======
+    ELEM_TYPE = SingleByteFieldType
+
+class G600ModeMouseMappingType(CompositeFieldType):
+    ID = "ConfigMode"
+    KTM = [("LedColorsNormal", G600LedColorsType),
+           ("lighting?", UnknownBytesArray0),
+>>>>>>> release-0.1
            ("PollRate", G600PollRateType),
            ("DPI", G600DPIGroupType),
            ("Unknown1", UnknownBytesArray1),
            ("buttonMapNormal", G600ButtonMapType),
+<<<<<<< HEAD
            ("padding?", UnknownBytesArray2),
            ("buttonMapShift", G600ButtonMapType),
+=======
+           ("LedColorsShifted", G600LedColorsType),
+           ("buttonMapShifted", G600ButtonMapType),
+>>>>>>> release-0.1
     ]
 
 class G600MouseMapping(CompositeFieldType):
