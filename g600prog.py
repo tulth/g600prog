@@ -1,4 +1,19 @@
 #!/bin/env python
+"""Utility to read/write logitech g600 mouse key maps.  
+Behaves like cp, ie, give it a source and destination.
+In most cases, this requires root (ie, run sudo <this script>).
+Mouse configurations are stored in a human readable json format.
+Note: MOUSE is a special keyword that specifies the mouse rather than a file.
+
+For example, to copy the current mouse config to a file called mouse_config.json:
+$ sudo ./g600prog.py MOUSE mouse_config.json
+
+Copying a custom_config.json file to the mouse:
+$ sudo ./g600prog.py custom_config.json MOUSE 
+
+Leaving off the second argument causes it to print to stdout.
+So, to print your current mouse config:
+$ sudo ./g600prog.py MOUSE"""
 from __future__ import print_function
 import sys
 import os
@@ -14,16 +29,16 @@ import usb.util
 
 def main(argv):
     cfg = parseArgs(argv)
-    if cfg.print or (cfg.read_file is not None):
+    if cfg.SOURCE == "MOUSE":
         mouseMapping = readMouseMappingFromMouse(cfg.debug)
-        if cfg.print:
-            print("Printing mouse config...")
-            print(mouseMapping)
-        if cfg.read_file is not None:
-            saveMouseMappingToFile(cfg.read_file, cfg.overwrite_file, mouseMapping)
-    if cfg.write_file is not None:
-        mouseMapping = readMouseMappingFromFile(cfg.write_file, cfg.debug)
+    else:
+        mouseMapping = readMouseMappingFromFile(cfg.SOURCE, cfg.debug)
+    if cfg.DESTINATION is None:
+        print(mouseMapping)
+    elif cfg.DESTINATION == "MOUSE":
         writeMouseMappingToMouse(mouseMapping, cfg.debug, cfg.dry_run)
+    else:
+        saveMouseMappingToFile(cfg.DESTINATION, cfg.overwrite_file, mouseMapping)
 
         
 def readMouseMappingFromMouse(debug):
@@ -34,20 +49,21 @@ def readMouseMappingFromMouse(debug):
     print("... done reading mouse config from mouse")
     return mouseMapping
 
-def readMouseMappingFromFile(fileHandle, debug):
-    print("Reading mouse config from file...")
+def readMouseMappingFromFile(fileName, debug):
+    print("Reading mouse config from file >{}< ...".format(fileName))
     mouseMapping = G600MouseMapping()
-    mouseMapping.json = fileHandle.read()
+    with open(fileName, 'r') as fileHandle:
+        mouseMapping.json = fileHandle.read()
     print("... done reading mouse config from file")
     return mouseMapping
 
 def saveMouseMappingToFile(fileName, forceWrite, mouseMapping):
-    print("Saving the mouse config to disk...")
+    print("Saving the mouse config to file >{}< ...".format(fileName))
     if os.path.isfile(fileName) and not forceWrite:
         raise Exception("File already exists and overwrite-file flag not set")
-    with open(fileName,"w") as fileHandle:
+    with open(fileName, "w") as fileHandle:
         fileHandle.write(mouseMapping.json)
-    print("...done the read mouse config to disk")
+    print("...done saving the mouse config to file")
 
 def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
     print("Writing the mouse config to the mouse...")
@@ -56,29 +72,25 @@ def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
     print("...done writing read mouse config to the mouse")
 
 def parseArgs(argv):
-    parser = argparse.ArgumentParser(description='Utility to read/write logitech g600 mouse key maps.  In most cases, this requires root (ie, run sudo <this script>)')
-    if len(argv) == 1: 
+    description = __doc__
+    parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
+    if len(argv) not in (2, 3): 
         argv.append('-h') 
 
-    rdWrGroup = parser.add_mutually_exclusive_group()
-    parser.add_argument('-p', '--print',
-                        help='Print the current mappings stored in the mouse',
-                        action='store_true',)
-    rdWrGroup.add_argument('-r', '--read-file',
-                           help='Read current settings stored in the mouse and save to the file specified',
+    parser.add_argument('SOURCE',
+                        help='Configuration source, can be MOUSE for the mouse itself or a filename.',
+    )
+    parser.add_argument('DESTINATION', nargs='?', default=None,
+                        help='Optional configuration destination, can be the MOUSE or filename.  If omitted, prints to stdout.',
     )
     parser.add_argument('-f', '--overwrite-file',
-                        help='Force overwrite of settings file if it already exists during read-file operation.',
+                        help='Normally, if the destination file already exists, the program will terminate.  This option forces the overwrite of DESTINATION even if it exists.',
                         action='store_true',)
-    rdWrGroup.add_argument('-w', '--write-file',
-                           type=argparse.FileType('r'),
-                           help='Write the settings in the specified file to the mouse',
-    )
     parser.add_argument('-n', '--dry-run',
                         help='For testing writes to the mouse, intended to be used in conjunction with debug, will do everything except for actually send the usb programming messages.',
                         action='store_true',)
     parser.add_argument('-d', '--debug',
-                        help='Turn on debug printing',
+                        help='Turn on debug printing.',
                         action='store_true',)
 
     cfg = parser.parse_args()
