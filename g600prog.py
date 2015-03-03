@@ -33,12 +33,16 @@ def main(argv):
         mouseMapping = readMouseMappingFromMouse(cfg.debug)
     else:
         mouseMapping = readMouseMappingFromFile(cfg.SOURCE, cfg.debug)
+    if cfg.binary:
+        mouseMappingBinary = G600MouseMappingBinary()
+        mouseMappingBinary.fromModeRawBytesList(mouseMapping.toModeRawBytesList())
+        mouseMapping = mouseMappingBinary
     if cfg.DESTINATION is None:
         print(mouseMapping)
     elif cfg.DESTINATION == "MOUSE":
         writeMouseMappingToMouse(mouseMapping, cfg.debug, cfg.dry_run)
     else:
-        saveMouseMappingToFile(cfg.DESTINATION, cfg.overwrite_file, mouseMapping)
+        saveMouseMappingToFile(mouseMapping, cfg.DESTINATION, cfg.overwrite_file)
 
 
 def readMouseMappingFromMouse(debug):
@@ -52,14 +56,23 @@ def readMouseMappingFromMouse(debug):
 
 def readMouseMappingFromFile(fileName, debug):
     print("Reading mouse config from file >{}< ...".format(fileName))
-    mouseMapping = G600MouseMapping()
     with open(fileName, 'r') as fileHandle:
-        mouseMapping.json = fileHandle.read()
+        jsonObj = json.loads(fileHandle.read())
+        mouseMapping = G600MouseMapping()
+        if "configFormat" not in jsonObj:
+            raise FromJsonError("missing configFormat!")
+        if jsonObj["configFormat"] == "BinaryFormat":
+            mouseMappingBinary = G600MouseMappingBinary()
+            mouseMapping.fromModeRawBytesList(mouseMappingBinary.toModeRawBytesList())
+        elif jsonObj["configFormat"] == "HumanReadableFormat":
+            pass
+        else:
+            raise FromJsonError("Undefined configFormat >>{}<<".format(jsonObj["configFormat"]))
     print("... done reading mouse config from file")
     return mouseMapping
 
 
-def saveMouseMappingToFile(fileName, forceWrite, mouseMapping):
+def saveMouseMappingToFile(mouseMapping, fileName, forceWrite):
     print("Saving the mouse config to file >{}< ...".format(fileName))
     if os.path.isfile(fileName) and not forceWrite:
         raise Exception("File already exists and overwrite-file flag not set")
@@ -78,7 +91,7 @@ def writeMouseMappingToMouse(mouseMapping, debug, dryRun):
 def parseArgs(argv):
     description = __doc__
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
-    if len(argv) not in (2, 3):
+    if len(argv) == 1:
         argv.append('-h')
 
     parser.add_argument('SOURCE',
@@ -93,6 +106,9 @@ def parseArgs(argv):
                         action='store_true',)
     parser.add_argument('-d', '--debug',
                         help='Turn on debug printing.',
+                        action='store_true',)
+    parser.add_argument('--binary',
+                        help='Store output config in JSON binary byte array format.  This could be useful for moving betweeen versions of this app where the human readable JSON format changes.',
                         action='store_true',)
 
     cfg = parser.parse_args()
@@ -351,9 +367,9 @@ KB_SCAN_CODES_DICT = {0x00: "KC_NOKEY",
                       0x7C: "KC_COPY",
                       0x7D: "KC_PASTE",
                       0x7E: "KC_FIND",
-                      0x7F: "KC__MUTE",
-                      0x80: "KC__VOLUP",
-                      0x81: "KC__VOLDOWN",
+                      0x7F: "KC_MUTE",
+                      0x80: "KC_VOLUP",
+                      0x81: "KC_VOLDOWN",
                       0x82: "KC_LOCKING_CAPS",
                       0x83: "KC_LOCKING_NUM",
                       0x84: "KC_LOCKING_SCROLL",
@@ -417,6 +433,7 @@ class FromJsonError(Exception):
 class BaseFieldType(object):
     """Base type the other classes, do not use this class directly"""
     ID = "BaseField"
+    JSON_INDENT = 4
 
     def __init__(self, byteArray=constant0ByteIter, id=None):
         super(BaseFieldType, self).__init__()  # python2 compatibility
@@ -426,7 +443,7 @@ class BaseFieldType(object):
         return self.json
 
     def toJson(self):
-        return json.dumps(self.simpleRepr, indent=4)
+        return json.dumps(self.simpleRepr, indent=self.JSON_INDENT)
 
     def fromJson(self, jsonStr):
         try:
@@ -441,7 +458,7 @@ class BaseFieldType(object):
 class SingleByteFieldType(BaseFieldType):
     ID = "SingleByteField"
 
-    def __init__(self, byteArray=constant0ByteIter, id=None, byteLen=None):
+    def __init__(self, byteArray=constant0ByteIter, id=None):
         super(SingleByteFieldType, self).__init__(byteArray, id)  # python2 compatibility
         self.bytes = byteArray
 
@@ -789,11 +806,36 @@ class G600ModeMouseMappingType(CompositeFieldType):
            ]
 
 
+class StringField(BaseFieldType):
+    ID = "StringField"
+
+    def toByteArray(self):
+        return bytearray([])
+
+    def fromByteArray(self, byteArray):
+        pass
+
+    def toSimpleRepr(self):
+        return self.id
+
+    def fromSimpleRepr(self, arg):
+        pass
+
+
+class G600HumanReadableFormatType(StringField):
+    ID = "HumanReadableFormat"
+
+
+class G600BinaryFormatType(StringField):
+    ID = "BinaryFormat"
+
+
 class G600MouseMapping(CompositeFieldType):
     ID = "MouseMapping"
     KTM = [("Mode1 (default)", G600ModeMouseMappingType),
            ("Mode2", G600ModeMouseMappingType),
            ("Mode3", G600ModeMouseMappingType),
+           ("configFormat", G600HumanReadableFormatType),
            ]
 
     def toModeRawBytesList(self):
@@ -825,6 +867,20 @@ class G600MouseMapping(CompositeFieldType):
         raise NotImplementedError()
 
     bytes = property(toByteArray, fromByteArray)
+
+
+class G600BinaryModeMouseMappingType(ArrayFieldType):
+    ID = "BinaryMouseMapping"
+    NUM_ELEM = G600_READ_LENGTH - 1
+
+
+class G600MouseMappingBinary(G600MouseMapping):
+    ID = "MouseMappingBinary"
+    KTM = [("Mode1 (default)", G600BinaryModeMouseMappingType),
+           ("Mode2", G600BinaryModeMouseMappingType),
+           ("Mode3", G600BinaryModeMouseMappingType),
+           ("configFormat", G600BinaryFormatType),
+           ]
 
 ################################################################################
 
