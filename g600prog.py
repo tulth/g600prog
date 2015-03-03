@@ -65,7 +65,7 @@ def readMouseMappingFromFile(fileName, debug):
             mouseMappingBinary = G600MouseMappingBinary()
             mouseMapping.fromModeRawBytesList(mouseMappingBinary.toModeRawBytesList())
         elif jsonObj["configFormat"] == "HumanReadableFormat":
-            pass
+            mouseMapping.simpleRepr = jsonObj
         else:
             raise FromJsonError("Undefined configFormat >>{}<<".format(jsonObj["configFormat"]))
     print("... done reading mouse config from file")
