@@ -408,6 +408,11 @@ KB_SCAN_CODES_DICT = {0x00: "KC_NOKEY",
                       }
 KB_SCAN_CODES_INVDICT = invMap(KB_SCAN_CODES_DICT)  # for reverse lookup
 
+LIGHTING_EFFECT_DICT = {0x00: "NO_EFFECT",
+                        0x01: "PULSE",
+                        0x02: "RAINBOW",
+                        }
+LIGHTING_EFFECT_INVDICT = invMap(LIGHTING_EFFECT_DICT)  # for reverse lookup
 ################################################################################
 
 ################################################################################
@@ -747,11 +752,32 @@ class G600DPIGroupType(CompositeFieldType):
            ('DPI4', G600DPIType),
            ]
 
+
+class G600LightingEffectType(SingleByteFieldType):
+    ID = "lightingEffect"
+
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        if b in LIGHTING_EFFECT_DICT:
+            return LIGHTING_EFFECT_DICT[b]
+        else:
+            return "UNDEFINED{:03d}".format(b)
+
+    def fromSimpleRepr(self, arg):
+        argClean = cleanStr(arg)
+        if argClean in LIGHTING_EFFECT_INVDICT:
+            b = LIGHTING_EFFECT_INVDICT[argClean]
+        else:
+            b = undefinedConvert(argClean, self.id)
+        self.bytes = [b]
+
+
 class G600LightingType(CompositeFieldType):
     ID = "Lighting"
-    KTM = [("Lighting Effect", SingleByteFieldType),
+    KTM = [("Lighting Effect", G600LightingEffectType),
            ("Lighting Change Rate (0-15)", SingleByteFieldType),
            ]
+
 
 class G600LedColorsType(CompositeFieldType):
     KTM = [('Red', SingleByteFieldType),
