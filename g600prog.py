@@ -18,7 +18,6 @@ from __future__ import print_function
 import sys
 import os
 import argparse
-import pprint
 import itertools
 import json
 import collections
@@ -63,6 +62,7 @@ def readMouseMappingFromFile(fileName, debug):
             raise FromJsonError("missing configFormat!")
         if jsonObj["configFormat"] == "BinaryFormat":
             mouseMappingBinary = G600MouseMappingBinary()
+            mouseMappingBinary.simpleRepr = jsonObj
             mouseMapping.fromModeRawBytesList(mouseMappingBinary.toModeRawBytesList())
         elif jsonObj["configFormat"] == "HumanReadableFormat":
             mouseMapping.simpleRepr = jsonObj
@@ -739,7 +739,7 @@ class G600MouseButtonActionType(CompositeFieldType):
 
 
 class G600DPIGroupType(CompositeFieldType):
-    KTM = [('ShiftDPI', G600DPIType),
+    KTM = [('DPI_SHIFT DPI', G600DPIType),
            ('DefaultDPIIndex', SingleByteFieldType),
            ('DPI1', G600DPIType),
            ('DPI2', G600DPIType),
@@ -747,6 +747,11 @@ class G600DPIGroupType(CompositeFieldType):
            ('DPI4', G600DPIType),
            ]
 
+class G600LightingType(CompositeFieldType):
+    ID = "Lighting"
+    KTM = [("Lighting Effect", SingleByteFieldType),
+           ("Lighting Change Rate (0-15)", SingleByteFieldType),
+           ]
 
 class G600LedColorsType(CompositeFieldType):
     KTM = [('Red', SingleByteFieldType),
@@ -783,7 +788,7 @@ class G600ButtonMapType(CompositeFieldType):
 
 class UnknownBytesArray0(ArrayFieldType):
     ID = "Unknown"
-    NUM_ELEM = 0x4b - 0x44
+    NUM_ELEM = 0x4b - 0x46
     ELEM_TYPE = SingleByteFieldType
 
 
@@ -796,7 +801,8 @@ class UnknownBytesArray1(ArrayFieldType):
 class G600ModeMouseMappingType(CompositeFieldType):
     ID = "ConfigMode"
     KTM = [("LedColorsNormal", G600LedColorsType),
-           ("lighting?", UnknownBytesArray0),
+           ("Lighting", G600LightingType),
+           ("Unknown0", UnknownBytesArray0),
            ("PollRate", G600PollRateType),
            ("DPI", G600DPIGroupType),
            ("Unknown1", UnknownBytesArray1),
