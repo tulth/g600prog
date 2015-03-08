@@ -5,6 +5,9 @@ Behaves like cp, ie, give it a source and destination.
 Note: MOUSE is a special keyword that specifies the mouse rather than a file.
 
 In most cases, this script requires root (ie, run sudo <this script>).
+Why? Two reasons: 
+1. To gain access to the usb configuration interface
+2. To temporarily detach other drivers from the mouse when doing updates
 
 Mouse configurations are stored in a human readable json format by default.
 A json byte format (`--bytes`) is also available, which is a portable
