@@ -1,8 +1,9 @@
 # g600prog
 ## Overview
 Utility to read/write Logitech g600 mouse key maps.
-Behaves like cp, ie, give it a source and destination.
-Note: MOUSE is a special keyword that specifies the mouse rather than a file.
+
+Behaves like `cp`, ie, give it a source and destination.
+Note: `MOUSE` is a special keyword that specifies the mouse rather than a file.
 
 In most cases, this script requires root (ie, run sudo <this script>).
 Why? Two reasons: 
@@ -10,8 +11,11 @@ Why? Two reasons:
 - To temporarily detach other drivers from the mouse when doing updates
 
 Mouse configurations are stored in a human readable json format by default.
-A json byte format (`--bytes`) is also available, which is a portable
-between versions of this tool.
+A json byte format (`--bytes`) is also available.
+This bytes format is intended to be portable between versions (0.4+) of this tool.
+The human readable format is not planned to be portable between versions.
+
+### Example Use
 
 For example, to copy the current mouse configuration to a file called mouse_config.json:
 ```
@@ -30,13 +34,13 @@ $ sudo ./g600prog.py MOUSE
 ```
 
 ## Modes and gshift
-The g600 has 3 modes of configuration.
-Each of these is a totally independent mapping, DPI, and lighting settings.
+The g600 has three "modes" of configuration.
+Each "mode" is a totally independent group of button mapping, DPI, lighting settings, etc.
 Mode 1 is the default mode.
 The Mouse button code: `MODE_SWITCH` will cycle the mouse to the next mode.
 
-Each mode actually has two button mappings, Normal and G-shifted.
-While holding down the mouse button with the `GSHIFT` code bound, the mouse will take on the buttonMapShifted
+Each mode actually has two mouse button mappings, Normal and G-shifted.
+While holding down the mouse button with the `GSHIFT` code bound, the mouse will take on the buttonMapShifted, and LedColorsShifted
  
 
 ## Byte to name translator.
@@ -50,18 +54,17 @@ DPI bytes are effectively multiplied by 50 to be the human readable (and actual)
 Max DPI for this mouse is 8200.
 
 Poll rate bytes are translated to the human readable (and actual) polling rate by the following formula:
-ActualPollrate = int(1000 / (1 + int(byte)))
+```ActualPollrate = int(1000 / (1 + int(byte)))```
 Max pollrate is 1000
 
 ## Buttons
-Each button on the mouse has 3 pieces bytes data:
+Each button on the mouse has 3 configuration bytes assosciated with it:
 - USB mouse code byte
 - Bit-wise modifier keys (left/right alt, ctrl, shift, etc)
 - USB keyboard scan code.
 
-If the mouse scan code is set to anything other that 0 (NO_MOUSEBUT),
+If the mouse code byte is set to anything other that 0 (NO_MOUSEBUT),
 it will override the second two bytes and they will not be used.
-
 
 ### Mouse Button Codes
 ```
@@ -270,8 +273,8 @@ it will override the second two bytes and they will not be used.
 ```
 
 ## Lighting
-The lighting section is fairly self explanitory.
-Lighting Effect uses the following definiton table:
+The lighting section is fairly self explanatory.
+Lighting Effect uses the following definition table:
 ```
 | Byte | Name      |
 |------+-----------|
