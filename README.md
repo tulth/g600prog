@@ -7,7 +7,7 @@ Note: MOUSE is a special keyword that specifies the mouse rather than a file.
 In most cases, this script requires root (ie, run sudo <this script>).
 
 Mouse configurations are stored in a human readable json format by default.
-A json byte format (--bytes) is also available, which is more portable
+A json byte format (`--bytes`) is also available, which is a portable
 between versions of this tool.
 
 For example, to copy the current mouse configuration to a file called mouse_config.json:
@@ -27,12 +27,28 @@ $ sudo ./g600prog.py MOUSE
 ```
 
 ## Modes and gshift
+The g600 has 3 modes of configuration.
+Each of these is a totally independent mapping, DPI, and lighting settings.
+Mode 1 is the default mode.
+The Mouse button code: `MODE_SWITCH` will cycle the mouse to the next mode.
+
+Each mode actually has two button mappings, Normal and G-shifted.
+While holding down the mouse button with the `GSHIFT` code bound, the mouse will take on the buttonMapShifted
+ 
 
 ## Byte to name translator.
-In --bytes mode, there are just arrays of the raw bytes of each mode.
+In `--bytes` mode, there three arrays of the raw bytes, one for each mode.
 In the default human readable mode, the bytes are translated to understandable names.
 These names are discussed in the following sections.
-Note, if a byte does not map in any of the namings, it will appear as UNDEFINEDXXX where XXX is a 3-digit decimal representation of the byte.
+Note, if a byte does not map in any of the namings, it will appear as `UNDEFINEDXXX` where `XXX` is a 3-digit decimal representation of the byte.
+
+## DPI / Poll Rate
+DPI bytes are effectively multiplied by 50 to be the human readable (and actual) DPI number.
+Max DPI for this mouse is 8200.
+
+Poll rate bytes are translated to the human readable (and actual) polling rate by the following formula:
+ActualPollrate = int(1000 / (1 + int(byte)))
+Max pollrate is 1000
 
 ## Buttons
 Each button on the mouse has 3 pieces bytes data:
@@ -44,7 +60,7 @@ If the mouse scan code is set to anything other that 0 (NO_MOUSEBUT),
 it will override the second two bytes and they will not be used.
 
 
-### Mouse Buttons Codes
+### Mouse Button Codes
 ```
 | Byte | Name         |
 |------+--------------|
