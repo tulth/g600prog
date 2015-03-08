@@ -18,7 +18,6 @@ from __future__ import print_function
 import sys
 import os
 import argparse
-import pprint
 import itertools
 import json
 import collections
@@ -63,6 +62,7 @@ def readMouseMappingFromFile(fileName, debug):
             raise FromJsonError("missing configFormat!")
         if jsonObj["configFormat"] == "BinaryFormat":
             mouseMappingBinary = G600MouseMappingBinary()
+            mouseMappingBinary.simpleRepr = jsonObj
             mouseMapping.fromModeRawBytesList(mouseMappingBinary.toModeRawBytesList())
         elif jsonObj["configFormat"] == "HumanReadableFormat":
             mouseMapping.simpleRepr = jsonObj
@@ -408,6 +408,11 @@ KB_SCAN_CODES_DICT = {0x00: "KC_NOKEY",
                       }
 KB_SCAN_CODES_INVDICT = invMap(KB_SCAN_CODES_DICT)  # for reverse lookup
 
+LIGHTING_EFFECT_DICT = {0x00: "NO_EFFECT",
+                        0x01: "PULSE",
+                        0x02: "RAINBOW",
+                        }
+LIGHTING_EFFECT_INVDICT = invMap(LIGHTING_EFFECT_DICT)  # for reverse lookup
 ################################################################################
 
 ################################################################################
@@ -739,12 +744,38 @@ class G600MouseButtonActionType(CompositeFieldType):
 
 
 class G600DPIGroupType(CompositeFieldType):
-    KTM = [('ShiftDPI', G600DPIType),
+    KTM = [('DPI_SHIFT DPI', G600DPIType),
            ('DefaultDPIIndex', SingleByteFieldType),
            ('DPI1', G600DPIType),
            ('DPI2', G600DPIType),
            ('DPI3', G600DPIType),
            ('DPI4', G600DPIType),
+           ]
+
+
+class G600LightingEffectType(SingleByteFieldType):
+    ID = "lightingEffect"
+
+    def toSimpleRepr(self):
+        b = self.bytes[0]
+        if b in LIGHTING_EFFECT_DICT:
+            return LIGHTING_EFFECT_DICT[b]
+        else:
+            return "UNDEFINED{:03d}".format(b)
+
+    def fromSimpleRepr(self, arg):
+        argClean = cleanStr(arg)
+        if argClean in LIGHTING_EFFECT_INVDICT:
+            b = LIGHTING_EFFECT_INVDICT[argClean]
+        else:
+            b = undefinedConvert(argClean, self.id)
+        self.bytes = [b]
+
+
+class G600LightingType(CompositeFieldType):
+    ID = "Lighting"
+    KTM = [("Lighting Effect", G600LightingEffectType),
+           ("Lighting Change Rate (0-15)", SingleByteFieldType),
            ]
 
 
@@ -783,7 +814,7 @@ class G600ButtonMapType(CompositeFieldType):
 
 class UnknownBytesArray0(ArrayFieldType):
     ID = "Unknown"
-    NUM_ELEM = 0x4b - 0x44
+    NUM_ELEM = 0x4b - 0x46
     ELEM_TYPE = SingleByteFieldType
 
 
@@ -796,7 +827,8 @@ class UnknownBytesArray1(ArrayFieldType):
 class G600ModeMouseMappingType(CompositeFieldType):
     ID = "ConfigMode"
     KTM = [("LedColorsNormal", G600LedColorsType),
-           ("lighting?", UnknownBytesArray0),
+           ("Lighting", G600LightingType),
+           ("Unknown0", UnknownBytesArray0),
            ("PollRate", G600PollRateType),
            ("DPI", G600DPIGroupType),
            ("Unknown1", UnknownBytesArray1),

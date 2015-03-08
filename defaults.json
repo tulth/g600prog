@@ -5,9 +5,11 @@
             "Green": 0,
             "Blue": 0
         },
-        "lighting?": [
-            2,
-            6,
+        "Lighting": {
+            "Lighting Effect": "RAINBOW",
+            "Lighting Change Rate (0-15)": 6
+        },
+        "Unknown0": [
             0,
             0,
             0,
@@ -16,7 +18,7 @@
         ],
         "PollRate": 1000,
         "DPI": {
-            "ShiftDPI": 400,
+            "DPI_SHIFT DPI": 400,
             "DefaultDPIIndex": 2,
             "DPI1": 400,
             "DPI2": 1200,
@@ -254,9 +256,11 @@
             "Green": 255,
             "Blue": 255
         },
-        "lighting?": [
-            0,
-            0,
+        "Lighting": {
+            "Lighting Effect": "NO_EFFECT",
+            "Lighting Change Rate (0-15)": 0
+        },
+        "Unknown0": [
             0,
             0,
             0,
@@ -265,7 +269,7 @@
         ],
         "PollRate": 1000,
         "DPI": {
-            "ShiftDPI": 400,
+            "DPI_SHIFT DPI": 400,
             "DefaultDPIIndex": 2,
             "DPI1": 400,
             "DPI2": 1200,
@@ -503,9 +507,11 @@
             "Green": 255,
             "Blue": 0
         },
-        "lighting?": [
-            1,
-            4,
+        "Lighting": {
+            "Lighting Effect": "PULSE",
+            "Lighting Change Rate (0-15)": 4
+        },
+        "Unknown0": [
             0,
             0,
             0,
@@ -514,7 +520,7 @@
         ],
         "PollRate": 1000,
         "DPI": {
-            "ShiftDPI": 400,
+            "DPI_SHIFT DPI": 400,
             "DefaultDPIIndex": 2,
             "DPI1": 400,
             "DPI2": 1200,
