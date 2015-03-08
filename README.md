@@ -11,14 +11,20 @@ A json byte format (--bytes) is also available, which is more portable
 between versions of this tool.
 
 For example, to copy the current mouse configuration to a file called mouse_config.json:
+```
 $ sudo ./g600prog.py MOUSE mouse_config.json
+```
 
 Copying a custom_config.json file to the mouse:
+```
 $ sudo ./g600prog.py custom_config.json MOUSE
+```
 
 Leaving off the second argument causes it to print to stdout.
 So, to print your current mouse config:
+```
 $ sudo ./g600prog.py MOUSE
+```
 
 ## Modes and gshift
 
@@ -39,6 +45,7 @@ it will override the second two bytes and they will not be used.
 
 
 ### Mouse Buttons Codes
+```
 | Byte | Name         |
 |------+--------------|
 | 0x00 | NO_MOUSEBUT  |
@@ -56,8 +63,10 @@ it will override the second two bytes and they will not be used.
 | 0x15 | DPI_SHIFT    |
 | 0x16 | DPI_DEFAULT  |
 | 0x17 | GSHIFT       |
+```
 
 ### Keyboard Modifier Codes (left-alt, right-shift, etc)
+```
 | Bit set | Name   |
 |---------+--------|
 |       0 | LCTRL  |
@@ -68,8 +77,10 @@ it will override the second two bytes and they will not be used.
 |       5 | RSHIFT |
 |       6 | RALT   |
 |       7 | RGUI   |
+```
 
 ### Keyboard Scan Codes
+```
 | Byte | Name           |
 |------+----------------|
 | 0x00 | NOKEY          |
@@ -237,13 +248,15 @@ it will override the second two bytes and they will not be used.
 | 0xA2 | CLEAR_AGAIN    |
 | 0xA3 | CRSEL          |
 | 0xA4 | EXSEL          |
+```
 
 ## Lighting
 The lighting section is fairly self explanitory.
 Lighting Effect uses the following definiton table:
+```
 | Byte | Name      |
 |------+-----------|
 | 0x00 | NO_EFFECT |
 | 0x01 | PULSE     |
 | 0x02 | RAINBOW   |
-
+```
