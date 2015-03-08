@@ -6,8 +6,8 @@ Note: MOUSE is a special keyword that specifies the mouse rather than a file.
 
 In most cases, this script requires root (ie, run sudo <this script>).
 Why? Two reasons: 
-1. To gain access to the usb configuration interface
-2. To temporarily detach other drivers from the mouse when doing updates
+- To gain access to the usb configuration interface
+- To temporarily detach other drivers from the mouse when doing updates
 
 Mouse configurations are stored in a human readable json format by default.
 A json byte format (`--bytes`) is also available, which is a portable
@@ -55,9 +55,9 @@ Max pollrate is 1000
 
 ## Buttons
 Each button on the mouse has 3 pieces bytes data:
-1. USB mouse code byte
-2. Bit-wise modifier keys (left/right alt, ctrl, shift, etc)
-3. USB keyboard scan code.
+- USB mouse code byte
+- Bit-wise modifier keys (left/right alt, ctrl, shift, etc)
+- USB keyboard scan code.
 
 If the mouse scan code is set to anything other that 0 (NO_MOUSEBUT),
 it will override the second two bytes and they will not be used.
