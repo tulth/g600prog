@@ -1,5 +1,7 @@
 # g600prog
 ## Overview
+WARNING: tested on arch linux where python runs python3
+
 Utility to read/write Logitech g600 mouse key maps.
 
 Behaves like `cp`, ie, give it a source and destination.
